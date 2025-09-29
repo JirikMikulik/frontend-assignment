@@ -39,11 +39,18 @@ userRoutes.post('/api/register', (req: Request, res: Response) => {
 userRoutes.post('/api/login', (req: Request, res: Response) => {
   const {password, username} = validateCredentialsFromBody(req, res);
 
+  // fixed, original code was not working for me
   userDB.findOne(
-    (user: User) => user.username === username && comparePassword(password, user.password),
+    {
+      $where() {
+        return this.username === username && comparePassword(password, this.password);
+      },
+    },
     (err: Error | null, user: User | null) => {
       if (isNotNil(err)) return res.status(500).json({error: 'Internal server error'});
       if (isNil(user)) return res.status(401).json({error: 'Invalid credential'});
+
+      console.log('login, found user: ', username, user.username, user.id);
 
       const accessToken = signAccessToken(user.id, username);
       const refreshToken = signRefreshToken(user.id, username);
